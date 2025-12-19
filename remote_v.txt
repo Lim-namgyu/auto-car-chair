@@ -1,0 +1,2 @@
+origin	https://github.com/Lim-namgyu/auto-car-chair.git (fetch)
+origin	https://github.com/Lim-namgyu/auto-car-chair.git (push)

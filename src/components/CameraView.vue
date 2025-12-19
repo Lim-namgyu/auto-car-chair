@@ -6,6 +6,14 @@ import { drawConnectors, drawLandmarks } from '@mediapipe/drawing_utils';
 import { POSE_CONNECTIONS } from '@mediapipe/pose';
 import { ERGONOMICS_CONSTANTS } from '../utils/ergonomics';
 
+const props = defineProps({
+  mode: {
+    type: String,
+    default: 'side' // 'front' or 'side'
+  }
+});
+const emit = defineEmits(['pose-results']);
+
 const videoRef = ref(null);
 const canvasRef = ref(null);
 let camera = null;
@@ -23,23 +31,48 @@ const onResults = (results) => {
   // Draw the video frame
   canvasCtx.drawImage(results.image, 0, 0, w, h);
   
-  // Draw Target Zone for Side View (Vertical Center Line as reference?)
-  // For side view, we might want a vertical line to help them center the driver.
-  const centerX = w * 0.5;
-  
-  canvasCtx.strokeStyle = 'rgba(74, 222, 128, 0.5)';
-  canvasCtx.lineWidth = 2;
-  canvasCtx.setLineDash([10, 10]);
-  canvasCtx.beginPath();
-  canvasCtx.moveTo(centerX, 0);
-  canvasCtx.lineTo(centerX, h);
-  canvasCtx.stroke();
-  canvasCtx.setLineDash([]);
-  
-  // Draw Text Label
-  canvasCtx.fillStyle = '#4ade80';
-  canvasCtx.font = '24px Inter, sans-serif';
-  canvasCtx.fillText('운전자가 중앙에 오도록 맞추세요', centerX - 150, 40);
+  if (props.mode === 'front') {
+      // -- FRONT VIEW GUIDES --
+      const minY = ERGONOMICS_CONSTANTS.EYE_LEVEL_MIN * h;
+      const maxY = ERGONOMICS_CONSTANTS.EYE_LEVEL_MAX * h;
+      
+      canvasCtx.fillStyle = 'rgba(74, 222, 128, 0.2)';
+      canvasCtx.fillRect(0, minY, w, maxY - minY);
+      
+      canvasCtx.strokeStyle = 'rgba(74, 222, 128, 0.8)';
+      canvasCtx.lineWidth = 2;
+      canvasCtx.setLineDash([5, 5]);
+      canvasCtx.beginPath();
+      canvasCtx.moveTo(0, minY);
+      canvasCtx.lineTo(w, minY);
+      canvasCtx.moveTo(0, maxY);
+      canvasCtx.lineTo(w, maxY);
+      canvasCtx.stroke();
+      canvasCtx.setLineDash([]);
+      
+      canvasCtx.fillStyle = '#4ade80';
+      canvasCtx.font = '24px Inter, sans-serif';
+      canvasCtx.fillText('권장 눈 높이 영역', 20, minY - 10);
+      
+  } else {
+      // -- SIDE VIEW GUIDES --
+      const centerX = w * 0.5;
+      
+      canvasCtx.strokeStyle = 'rgba(74, 222, 128, 0.5)';
+      canvasCtx.lineWidth = 2;
+      canvasCtx.setLineDash([10, 10]);
+      canvasCtx.beginPath();
+      canvasCtx.moveTo(centerX, 0);
+      canvasCtx.lineTo(centerX, h);
+      canvasCtx.stroke();
+      canvasCtx.setLineDash([]);
+      
+      canvasCtx.fillStyle = '#4ade80';
+      canvasCtx.font = '24px Inter, sans-serif';
+      canvasCtx.textAlign = 'center';
+      canvasCtx.fillText('운전자를 중앙에 맞춰주세요', centerX, 40);
+      canvasCtx.textAlign = 'start';
+  }
 
   if (results.poseLandmarks) {
     drawConnectors(canvasCtx, results.poseLandmarks, POSE_CONNECTIONS,
@@ -53,7 +86,7 @@ const onResults = (results) => {
   canvasCtx.restore();
 };
 
-const emit = defineEmits(['pose-results']);
+
 
 onMounted(async () => {
   if (videoRef.value && canvasRef.value) {
@@ -100,14 +133,18 @@ onUnmounted(() => {
 .camera-container {
   position: relative;
   width: 100%;
-  max-width: 1280px;
+  max-width: 100%; /* Allow full width */
+  height: auto;
+  aspect-ratio: 9/16; /* Suggest vertical ratio */
   margin: 0 auto;
+  overflow: hidden;
+  border-radius: 12px;
+  background: #000;
 }
 
 .output_canvas {
   width: 100%;
-  height: auto;
-  border-radius: 12px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+  height: 100%; 
+  object-fit: cover; /* Fill the container */
 }
 </style>

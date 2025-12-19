@@ -4,8 +4,13 @@ import { ref, computed } from 'vue';
 import { analyzeDriverPose } from './utils/ergonomics';
 
 const currentMode = ref('side'); // 'side' (default) or 'front'
+const showGuide = ref(false);
 const poseLandmarks = ref(null);
 const analysisResult = ref(null);
+
+const toggleGuide = () => {
+  showGuide.value = !showGuide.value;
+};
 
 const handlePoseResults = (landmarks) => {
   poseLandmarks.value = landmarks;
@@ -69,6 +74,8 @@ const overallMessage = computed(() => {
           <div class="switch-bg" :class="currentMode"></div>
         </div>
       </div>
+      
+      <button class="help-btn" @click="toggleGuide">?</button>
     </header>
     
     <main>
@@ -107,10 +114,7 @@ const overallMessage = computed(() => {
                   <div class="feedback-card" :class="analysisResult.distance.status">
                     <div class="card-icon">💪</div>
                     <div class="card-info">
-                      <div class="card-header">
-                        <h3>팔 거리</h3>
-                        <span class="value">{{ analysisResult.distance.angle }}°</span>
-                      </div>
+                      <h3>팔 거리</h3>
                       <p>{{ analysisResult.distance.feedback }}</p>
                     </div>
                   </div>
@@ -122,10 +126,7 @@ const overallMessage = computed(() => {
                   <div class="feedback-card" :class="analysisResult.back.status">
                     <div class="card-icon">💺</div>
                     <div class="card-info">
-                      <div class="card-header">
-                        <h3>등받이</h3>
-                        <span class="value">{{ analysisResult.back.angle }}°</span>
-                      </div>
+                      <h3>등받이</h3>
                       <p>{{ analysisResult.back.feedback }}</p>
                     </div>
                   </div>
@@ -134,10 +135,7 @@ const overallMessage = computed(() => {
                   <div class="feedback-card" :class="analysisResult.hip.status">
                     <div class="card-icon">📐</div>
                     <div class="card-info">
-                      <div class="card-header">
-                        <h3>상체/엉덩이</h3>
-                        <span class="value" v-if="analysisResult.hip.angle">{{ analysisResult.hip.angle }}°</span>
-                      </div>
+                      <h3>상체/엉덩이</h3>
                       <p>{{ analysisResult.hip.feedback }}</p>
                     </div>
                   </div>
@@ -146,10 +144,7 @@ const overallMessage = computed(() => {
                   <div class="feedback-card" :class="analysisResult.elbow.status">
                     <div class="card-icon">💪</div>
                     <div class="card-info">
-                      <div class="card-header">
-                        <h3>팔 거리</h3>
-                        <span class="value" v-if="analysisResult.elbow.angle">{{ analysisResult.elbow.angle }}°</span>
-                      </div>
+                      <h3>팔 거리</h3>
                       <p>{{ analysisResult.elbow.feedback }}</p>
                     </div>
                   </div>
@@ -172,12 +167,200 @@ const overallMessage = computed(() => {
           </div>
         </div>
       </div>
+      <!-- Guide Modal -->
+      <div v-if="showGuide" class="guide-modal-overlay" @click.self="toggleGuide">
+        <div class="guide-modal">
+          <button class="close-btn" @click="toggleGuide">×</button>
+          
+          <div class="guide-content">
+            <h2>{{ currentMode === 'side' ? '측면 측정 가이드' : '정면 측정 가이드' }}</h2>
+            
+            <div class="guide-image-container">
+             <!-- Using placeholders as assets are not generated -->
+              <img v-if="currentMode === 'side'" src="https://placehold.co/600x337/1e293b/4ade80/png?text=Side+View+Guide" alt="Side View Guide" />
+              <img v-else src="https://placehold.co/600x337/1e293b/4ade80/png?text=Front+View+Guide" alt="Front View Guide" />
+            </div>
+            
+            <div class="guide-steps">
+              <template v-if="currentMode === 'side'">
+                <div class="step">
+                  <span class="step-num">1</span>
+                  <p>휴대폰을 <strong>보조석 시트</strong> 위나 도어 쪽 거치대에 놓아주세요.</p>
+                </div>
+                <div class="step">
+                  <span class="step-num">2</span>
+                  <p>운전자의 <strong>머리부터 엉덩이까지</strong> 전신이 잘 보이도록 각도를 조절하세요.</p>
+                </div>
+                <div class="step">
+                  <span class="step-num">3</span>
+                  <p>평소 운전하는 자세로 앉아 핸들을 잡아주세요.</p>
+                </div>
+              </template>
+              <template v-else>
+                <div class="step">
+                  <span class="step-num">1</span>
+                  <p>휴대폰을 <strong>대시보드(계기판 앞)</strong>에 안정적으로 거치하세요.</p>
+                </div>
+                <div class="step">
+                  <span class="step-num">2</span>
+                  <p>운전자의 <strong>얼굴과 어깨</strong>가 화면 중앙에 오도록 맞추세요.</p>
+                </div>
+                <div class="step">
+                  <span class="step-num">3</span>
+                  <p>정면을 응시하며 편안한 자세를 취해주세요.</p>
+                </div>
+              </template>
+            </div>
+            
+            <button class="action-btn" @click="toggleGuide">확인했어요</button>
+          </div>
+        </div>
+      </div>
     </main>
   </div>
 </template>
 
 <style scoped>
-/* Reset & Base */
+/* Guide Modal */
+.guide-modal-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(5px);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  animation: fadeIn 0.3s ease;
+}
+
+.guide-modal {
+  background: #1e293b;
+  border-radius: 24px;
+  width: 100%;
+  max-width: 400px;
+  position: relative;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+  border: 1px solid rgba(255,255,255,0.1);
+  overflow: hidden;
+  animation: slideUp 0.3s ease;
+}
+
+.close-btn {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: none;
+  border: none;
+  color: #94a3b8;
+  font-size: 2rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0.5rem;
+  z-index: 10;
+}
+
+.guide-content {
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.guide-content h2 {
+  font-size: 1.5rem;
+  color: #fff;
+  margin: 0 0 1.5rem;
+  text-align: center;
+}
+
+.guide-image-container {
+  width: 100%;
+  aspect-ratio: 16/9;
+  background: #0f172a;
+  border-radius: 12px;
+  margin-bottom: 1.5rem;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.guide-image-container img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.guide-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+  margin-bottom: 2rem;
+}
+
+.step {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  text-align: left;
+}
+
+.step-num {
+  background: #3b82f6;
+  color: #fff;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  font-weight: bold;
+  flex-shrink: 0;
+  margin-top: 0.1rem;
+}
+
+.step p {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #cbd5e1;
+  line-height: 1.5;
+}
+
+.action-btn {
+  background: #3b82f6;
+  color: #fff;
+  border: none;
+  padding: 1rem 2rem;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  width: 100%;
+  transition: background 0.2s;
+}
+
+.action-btn:hover {
+  background: #2563eb;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
 .app-container {
   font-family: -apple-system, BlinkMacSystemFont, "Pretendard", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   background-color: #0f172a; /* Slate 900 */
@@ -202,6 +385,26 @@ const overallMessage = computed(() => {
   align-items: center;
   gap: 1rem;
 }
+
+.help-btn {
+  position: absolute;
+  right: 1.5rem;
+  top: 1.5rem;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  backdrop-filter: blur(4px);
+  padding: 0;
+  font-size: 1rem;
+} 
 
 h1 {
   font-size: 1.25rem;
@@ -316,45 +519,45 @@ main {
   bottom: 0;
   left: 0;
   right: 0;
-  background: rgba(15, 23, 42, 0.85);
+  background: rgba(15, 23, 42, 0.9);
   backdrop-filter: blur(20px);
-  border-top-left-radius: 24px;
-  border-top-right-radius: 24px;
-  padding: 1rem 1.5rem 2rem;
+  border-top-left-radius: 20px;
+  border-top-right-radius: 20px;
+  padding: 1rem 1rem 1.5rem;
   box-shadow: 0 -10px 40px rgba(0,0,0,0.5);
   transition: transform 0.3s ease;
-  max-height: 45vh;
+  max-height: 50vh;
   overflow-y: auto;
   border-top: 1px solid rgba(255,255,255,0.1);
 }
 
 .sheet-handle {
-  width: 40px;
+  width: 36px;
   height: 4px;
   background: rgba(255,255,255,0.2);
   border-radius: 2px;
-  margin: 0 auto 1.5rem;
+  margin: 0 auto 1rem;
 }
 
 .status-summary {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 1.5rem;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
 }
 
 .status-icon {
-  width: 12px;
-  height: 12px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
 }
-.status-icon.good { background: #4ade80; box-shadow: 0 0 10px #4ade80; }
-.status-icon.bad { background: #f87171; box-shadow: 0 0 10px #f87171; }
+.status-icon.good { background: #4ade80; box-shadow: 0 0 8px #4ade80; }
+.status-icon.bad { background: #f87171; box-shadow: 0 0 8px #f87171; }
 .status-icon.neutral { background: #94a3b8; }
 
 .status-summary h2 {
   margin: 0;
-  font-size: 1.1rem;
+  font-size: 1rem;
   font-weight: 600;
   color: #fff;
 }
@@ -362,66 +565,55 @@ main {
 /* Feedback Grid */
 .feedback-grid {
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 0.75rem;
+  grid-template-columns: 1fr 1fr; /* Two columns for compactness */
+  gap: 0.5rem;
 }
 
 .feedback-card {
-  background: rgba(255,255,255,0.05);
-  border-radius: 16px;
-  padding: 1rem;
+  background: rgba(255,255,255,0.03);
+  border-radius: 12px;
+  padding: 0.75rem;
   display: flex;
+  flex-direction: column; /* Stack icon and text for better 2-col fit */
   align-items: flex-start;
-  gap: 1rem;
+  gap: 0.5rem;
   border: 1px solid rgba(255,255,255,0.05);
   transition: all 0.3s ease;
 }
 
-.feedback-card.good { background: rgba(74, 222, 128, 0.1); border-color: rgba(74, 222, 128, 0.2); }
+.feedback-card.good { background: rgba(74, 222, 128, 0.08); border-color: rgba(74, 222, 128, 0.15); }
 .feedback-card.too_upright, .feedback-card.too_reclined, 
 .feedback-card.too_bent, .feedback-card.too_straight, 
 .feedback-card.too_closed, .feedback-card.too_open, 
 .feedback-card.too_high, .feedback-card.too_high_head, 
 .feedback-card.too_close, .feedback-card.too_far {
-  background: rgba(248, 113, 113, 0.1);
-  border-color: rgba(248, 113, 113, 0.2);
+  background: rgba(248, 113, 113, 0.08);
+  border-color: rgba(248, 113, 113, 0.15);
 }
 
 .card-icon {
-  font-size: 1.5rem;
-  padding-top: 0.2rem;
+  font-size: 1.25rem;
 }
 
 .card-info {
-  flex: 1;
-}
-
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 0.25rem;
+  width: 100%;
 }
 
 .card-info h3 {
-  margin: 0 0 0.25rem;
-  font-size: 0.95rem;
+  margin: 0 0 0.15rem;
+  font-size: 0.85rem;
   font-weight: 600;
   color: #e2e8f0;
 }
 
-.value {
-  font-family: 'SF Mono', 'Menlo', monospace;
-  font-size: 0.9rem;
-  color: #94a3b8;
-}
-
 .card-info p {
   margin: 0;
-  font-size: 0.85rem;
+  font-size: 0.75rem;
   color: #cbd5e1;
-  line-height: 1.4;
+  line-height: 1.3;
+  /* limit lines if needed */
 }
+
 
 /* Empty State */
 .empty-state {
@@ -444,4 +636,4 @@ main {
   100% { transform: rotate(360deg); }
 }
 </style>
-```
+

@@ -191,17 +191,35 @@ export function analyzeDriverPose(landmarks, mode = 'side') {
             }
         }
 
-        // 5. Height (Hip relative to Knee)
+        // 5. Height (Headroom Priority)
         let heightStatus = 'good';
         let heightFeedback = '시트 높이가 적절합니다.';
-        const heightDiff = hip.y - knee.y;
-        if (heightDiff < -0.05) {
-            heightStatus = 'too_high';
-            heightFeedback = '시트를 낮춰 엉덩이를 무릎보다 낮게 하세요.';
+
+        // Priority 1: Headroom (Nose position)
+        // If nose is too high (close to top edge), seat is definitely too high.
+        // nose.y is normalized [0, 1], 0 is top.
+        if (nose.visibility > minVisibility) {
+            if (nose.y < 0.15) { // Threshold adjusted (was 0.1)
+                heightStatus = 'too_high_head';
+                heightFeedback = '머리 공간이 부족합니다. 시트를 낮추세요.';
+            } else if (nose.y > 0.4) {
+                // Optional: If head is too low in frame, might suggest raising.
+                // But side view framing varies, so be conservative.
+                // heightStatus = 'too_low'; 
+                // heightFeedback = '시야 확보를 위해 시트를 조금 높여보세요.';
+            }
         }
-        if (nose.visibility > minVisibility && nose.y < 0.1) {
-            heightStatus = 'too_high_head';
-            heightFeedback = '머리 공간이 부족합니다. 시트를 낮추세요.';
+
+        // Priority 2: Hip vs Knee (Only if strictly visible)
+        // User feedback: Knee might be occluded. Check visibility stricter.
+        // Only trigger this if we haven't already flagged "too_high_head".
+        if (heightStatus === 'good' &&
+            hip.visibility > 0.8 && knee.visibility > 0.8) {
+            const heightDiff = hip.y - knee.y;
+            if (heightDiff < -0.05) {
+                heightStatus = 'too_high';
+                heightFeedback = '엉덩이가 무릎보다 높습니다. 시트를 낮추세요.';
+            }
         }
 
         return {
